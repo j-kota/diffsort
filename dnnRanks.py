@@ -12,7 +12,7 @@ import torchvision.transforms as transforms
 import math
 from functools import reduce
 from softRank import softRank
-from MyReLU import MyReLU
+#from MyReLU import MyReLU
 
 
 def mayberand(a,b,TF):
@@ -95,10 +95,10 @@ class NeuralNet(nn.Module):
         super(NeuralNet, self).__init__()
         self.fc1  = nn.Linear(input_size, hidden_size) 
         self.relu = nn.ReLU()
-        #self.fc2 = nn.Linear(hidden_size, 1)
+        self.fc2 = nn.Linear(hidden_size, 1)
         self.fc2  = nn.Linear(hidden_size, hidden_size)
         self.srank  = softRank()
-        self.myrelu = MyReLU()
+        #self.myrelu = MyReLU()
     
     def forward(self, x):
         out = self.fc1(x)
