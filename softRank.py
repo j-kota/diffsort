@@ -6,11 +6,6 @@ from scipy.linalg import block_diag
 
 
 class softRank(torch.autograd.Function):
-    """
-    We can implement our own custom autograd Functions by subclassing
-    torch.autograd.Function and implementing the forward and backward passes
-    which operate on Tensors.
-    """
 
     @staticmethod
     def forward(ctx, input):
@@ -45,7 +40,7 @@ class softRank(torch.autograd.Function):
         jacobians, = ctx.saved_tensors
         N = len(grad_output)
 
-        M = len( grad_output[0] )
+        
         
         # multiply each gradient by the jacobian for the corresponding sample
         # then restack the results to preserve the batch gradients' format
@@ -63,6 +58,7 @@ class softRank(torch.autograd.Function):
 def fwdRank(theta):
 
     # Define variables, constants and permutations
+    # with notation as in the original paper
     rho = np.arange(len(theta))[::-1] + 1
     eps = (1.0 / 10.0)
     x = np.arange(len(theta))[::-1]
@@ -74,7 +70,7 @@ def fwdRank(theta):
 
     ir = IsotonicRegression()
 
-    # v is the solution to isotonic regression
+    # v is the solution to isotonic regression over s-w
     v = ir.fit_transform(x,  s-w)
 
     # This is the result of the ranking operator
@@ -100,6 +96,7 @@ def fwdRank(theta):
             blocklens.append(1)
 
     # compute the nonzero jacobian values
+    # they are the lengths of the blocks/intervals on which v is constant
     num_blocks = len(blocklens)
     blockvals = 1.0/np.array(blocklens)
 
@@ -108,15 +105,17 @@ def fwdRank(theta):
     jacobi_v_blox = [ np.ones( (blocklens[i],blocklens[i]) )*blockvals[i] for i in range(0,num_blocks) ]
     jacobi_len = sum( blocklens )
 
-    # assemble v's jacobian operator from blocks
+    # assemble v's jacobian operator from the blocks the from its diagonal
     jacobi_v = block_diag( *jacobi_v_blox )
 
     # jacobian operator for P wrt variable z = -theta/eps
+    # The I is absorbed into the permutations due to symmetry
+    # The inner permutation is due to the chain rule between z and s
+    # The outer permutation is due to Proposition 3
     I = np.identity( jacobi_v.shape[0] )
     jacobi_P = ( (I-jacobi_v)[sigma_inv] )[:,sigma_inv]  
-    #jacobi_P = I-( (jacobi_v)[sigma_inv] )[:,sigma_inv]  
     
-    # jacobian operator for P wrt original input theta (chain rule)
+    # jacobian operator for P wrt the original input theta (due to chain rule)
     jacobi_P_theta = jacobi_P * (-1.0/eps)
 
     # Notes:

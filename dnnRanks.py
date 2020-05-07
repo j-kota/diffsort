@@ -25,10 +25,8 @@ def mayberand(a,b,TF):
 n_cols = 5
 n_rows = 10000  #need 10,000
 
-
 # Device configuration
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 
 # Hyper-parameters 
 input_size = n_cols      # n_jobs * n_tasksperjob * 2    (machine ID, duration)
@@ -58,6 +56,7 @@ def ranks(l):
 
 ranklabel = ranks( np.random.rand(n_cols) )
 x = [ sorted( np.random.rand(n_cols) ) for i in range(0,n_rows) ]
+#x = [ ( np.random.rand(n_cols) ) for i in range(0,n_rows) ]
 y = [ ranklabel for i in x ]  # same label for every sample
 print("rank label = ", ranklabel)
 
@@ -136,31 +135,23 @@ for epoch in range(num_epochs):
         #input("waiting")
         optimizer.step()
         loss_list.append(loss.item()) #JK
-        if (i+1) % 10 == 0:
-            print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}' 
-                   .format(epoch+1, num_epochs, i+1, total_step, loss.item()))
+        if (i+1) % 40 == 0:
+            # Test the model 
+            with torch.no_grad():
+                correct = 0
+                total = 0
+                for images, labels in test_loader:
+
+                    outputs = model(images)   
+                    total += labels.size(0)
+                    correct += torch.all( (outputs == labels).bool(),1 ).sum().item()
+            
+                print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.4f}' 
+                       .format(epoch+1, num_epochs, i+1, total_step, loss.item(),100 * correct / total))
 
 
          
-# Test the model 
-# In test phase, we don't need to compute gradients (for memory efficiency)
-with torch.no_grad():
-    correct = 0
-    total = 0
-    for images, labels in test_loader:
 
-        outputs = model(images)     # forward function is applied to every sample in the minibatch
-        total += labels.size(0)
-        correct += torch.all( (outputs == labels).bool(),1 ).sum().item()   #JK this shows that the loaders output minibatches.
-
-        print("outputs:")
-        print(outputs)
-        print("labels:")
-        print(labels)
-        print("outputs == labels")
-        print( torch.all( (outputs == labels).bool(),1 ) )
-
-    print('Accuracy of the network on the test data: {} %'.format(100 * correct / total))
 
 # Save the model checkpoint
 #torch.save(model.state_dict(), 'softRankDNN_state.ckpt')  #99.7%
