@@ -104,6 +104,7 @@ class NeuralNet(nn.Module):
         #out = self.myrelu.apply(out)
         #out = self.relu(out)
         #out = self.fc2(out)
+        out = torch.sin(out)
         out = self.srank.apply(out)
         
         return out
@@ -117,7 +118,8 @@ criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  
 
 # Train the model
-loss_list =[] #JK
+loss_list = [] #JK
+accu_list = []
 total_step = len(train_loader)
 for epoch in range(num_epochs):
     for i, (images, labels) in enumerate(train_loader):  
@@ -135,7 +137,7 @@ for epoch in range(num_epochs):
         #input("waiting")
         optimizer.step()
         loss_list.append(loss.item()) #JK
-        if (i+1) % 40 == 0:
+        if (i+1) % 80 == 0:
             # Test the model 
             with torch.no_grad():
                 correct = 0
@@ -149,17 +151,27 @@ for epoch in range(num_epochs):
                 print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.4f}' 
                        .format(epoch+1, num_epochs, i+1, total_step, loss.item(),100 * correct / total))
 
+                loss_list.append(loss.item())
+                accu_list.append(100*correct/total)
+                
+
 
          
 
 
 # Save the model checkpoint
 #torch.save(model.state_dict(), 'softRankDNN_state.ckpt')  #99.7%
-torch.save(model.state_dict(), 'zeroDNN_state.ckpt')
+#torch.save(model.state_dict(), 'linear_rank_len5_state.ckpt')
+torch.save(model.state_dict(), 'next.ckpt')
 
+pickle.dump( (loss_list, accu_list) , open("next.p", "wb")) 
+
+plt.plot( range(1,len(loss_list)+1), loss_list, 'r' )
+plt.show()
 
 print("printing one output: \n")
 print(model( torch.Tensor([221,222,223,224,225])[None,:] ))
+
 
 
 
