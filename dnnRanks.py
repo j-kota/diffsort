@@ -22,7 +22,7 @@ def mayberand(a,b,TF):
         return b
     
 
-n_cols = 5
+n_cols = 10
 n_rows = 10000  #need 10,000
 
 # Device configuration
@@ -168,9 +168,9 @@ for epoch in range(num_epochs):
 
 # Save the model checkpoint
 #torch.save(model.state_dict(), 'softRankDNN_state.ckpt')  #99.7%
-torch.save(model.state_dict(), 'relu_rank_len5_state.ckpt')
+torch.save(model.state_dict(), 'relu_rank_len10_state.ckpt')
 
-pickle.dump( (loss_list, trainloss_list, accu_list) , open("relu_rank_len5_plot.p", "wb")) 
+pickle.dump( (loss_list, trainloss_list, accu_list) , open("relu_rank_len10_plot.p", "wb")) 
 
 plt.plot( range(1,len(loss_list)+1), loss_list, 'r' )
 plt.show()
