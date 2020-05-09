@@ -32,7 +32,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 input_size = n_cols      # n_jobs * n_tasksperjob * 2    (machine ID, duration)
 hidden_size = n_cols     # math.ceil( 2.0/3.0 * input_size )
 num_classes = 10
-num_epochs = 100
+num_epochs = 200
 batch_size = 100
 learning_rate = 0.001
 
@@ -104,7 +104,8 @@ class NeuralNet(nn.Module):
         #out = self.myrelu.apply(out)
         #out = self.relu(out)
         #out = self.fc2(out)
-        out = torch.sin(out)
+        out = self.relu(out)
+        #out = torch.sin(out)
         out = self.srank.apply(out)
         
         return out
@@ -115,11 +116,13 @@ model = NeuralNet(input_size, input_size, num_classes).to(device)   #JK the mode
 # Loss and optimizer
 #criterion = nn.CrossEntropyLoss()     #JK-when ready:
 criterion = nn.MSELoss()
+test_criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  
 
 # Train the model
 loss_list = [] #JK
 accu_list = []
+trainloss_list = []
 total_step = len(train_loader)
 for epoch in range(num_epochs):
     for i, (images, labels) in enumerate(train_loader):  
@@ -136,23 +139,27 @@ for epoch in range(num_epochs):
         loss.backward()
         #input("waiting")
         optimizer.step()
-        loss_list.append(loss.item()) #JK
+        #loss_list.append(loss.item()) #JK
         if (i+1) % 80 == 0:
             # Test the model 
             with torch.no_grad():
                 correct = 0
+                
                 total = 0
+                testloss = 0
                 for images, labels in test_loader:
 
                     outputs = model(images)   
                     total += labels.size(0)
+                    testloss += test_criterion(outputs,labels).item() 
                     correct += torch.all( (outputs == labels).bool(),1 ).sum().item()
             
-                print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.4f}' 
-                       .format(epoch+1, num_epochs, i+1, total_step, loss.item(),100 * correct / total))
+                print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, TestLoss: {:.4f}, Accuracy: {:.4f}' 
+                       .format(epoch+1, num_epochs, i+1, total_step, loss.item(), testloss, 100 * correct / total))
 
                 loss_list.append(loss.item())
                 accu_list.append(100*correct/total)
+                trainloss_list.append( testloss / total )
                 
 
 
@@ -161,16 +168,15 @@ for epoch in range(num_epochs):
 
 # Save the model checkpoint
 #torch.save(model.state_dict(), 'softRankDNN_state.ckpt')  #99.7%
-#torch.save(model.state_dict(), 'linear_rank_len5_state.ckpt')
-torch.save(model.state_dict(), 'next.ckpt')
+torch.save(model.state_dict(), 'relu_rank_len5_state.ckpt')
 
-pickle.dump( (loss_list, accu_list) , open("next.p", "wb")) 
+pickle.dump( (loss_list, trainloss_list, accu_list) , open("relu_rank_len5_plot.p", "wb")) 
 
 plt.plot( range(1,len(loss_list)+1), loss_list, 'r' )
 plt.show()
 
-print("printing one output: \n")
-print(model( torch.Tensor([221,222,223,224,225])[None,:] ))
+#print("printing one output: \n")
+#print(model( torch.Tensor([221,222,223,224,225])[None,:] ))
 
 
 
