@@ -3,7 +3,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 
-
+path = "save_states//"
 filenames = [ "linear_rank_len5_plot.p",  "linear_rank_len10_plot.p",  "linear_rank_len15_plot.p",
                  "sin_rank_len5_plot.p",     "sin_rank_len10_plot.p",     "sin_rank_len15_plot.p",
              "relu_rank_len5_plot.p", "relu_rank_len10_plot.p", "relu_rank_len15_plot.p"  ]
@@ -11,7 +11,7 @@ filenames = [ "linear_rank_len5_plot.p",  "linear_rank_len10_plot.p",  "linear_r
 
 name = filenames[0]              
 
-with open(name, "rb") as f:
+with open(path+name, "rb") as f:
     x = pickle.load(f)
 
 loss_list, testloss_list, accu_list = x
