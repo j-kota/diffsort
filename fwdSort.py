@@ -14,7 +14,7 @@ eps = (1.0 / 1000.0)
 x = np.arange(len(theta))[::-1]
 ir = IsotonicRegression()
 z = rho/eps # -theta/eps
-w = theta   # rho
+w = -np.sort(-theta)   # rho
 
 sigma = np.argsort(-z)      #   <- play with this?
 sigma_inv = np.argsort(sigma)
@@ -25,10 +25,12 @@ v = ir.fit_transform(x,  s-w)
 thetasort = z - v[sigma_inv]
 
 
-print("v = ", v)
-print("thetasort = ", thetasort)
 print("sigma = ", sigma)
 print("sigma_inv = ", sigma_inv)
+print("s = ", s)
 print("theta[sigma][sigma_inv] = ",  theta[sigma][sigma_inv] )
+print("v = ", v)
+print("w = ", w)
+print("thetasort = ", thetasort)
 
 

@@ -9,7 +9,7 @@ filenames = [ "linear_rank_len5_plot.p",  "linear_rank_len10_plot.p",  "linear_r
              "relu_rank_len5_plot.p", "relu_rank_len10_plot.p", "relu_rank_len15_plot.p"  ]
 
 
-name = filenames[0]              
+name = filenames[8]              
 
 with open(path+name, "rb") as f:
     x = pickle.load(f)

@@ -26,7 +26,7 @@ class softRank(torch.autograd.Function):
         ranks_list   = [ torch.Tensor( a ) for (a,b) in results_list ]
         jacobi_list  = [ torch.Tensor( b ) for (a,b) in results_list ]
 
-        # the results are stacked to conform to batch processing format
+        # the results are stacked to conform to batch processing format (first dim holds batch)
         ctx.save_for_backward(  torch.stack(jacobi_list)  )
         return torch.stack( ranks_list )
 
@@ -40,21 +40,21 @@ class softRank(torch.autograd.Function):
         jacobians, = ctx.saved_tensors
         N = len(grad_output)
 
-        
+        #print("inside softRank.backward():")
+        #print("2-norm of jacobians = ")
+        #print( jacobians.norm(2,0) )
         
         # multiply each gradient by the jacobian for the corresponding sample
         # then restack the results to preserve the batch gradients' format
         grad_input = torch.stack( [ torch.matmul( grad_output[i] , jacobians[i] ) for i in range(0,N) ] )
         
-        #print("Inside softRank backward")
-        #print("jacobians from saved: ", jacobians)
-        #print("grad_output = ", grad_output)
-        #print("about to return grad_input:", grad_input)
-        
         return grad_input
 
 
-
+# numpy function that carries out
+# the forward algorithm and calculates jacobians
+# for the backward pass
+# returns both
 def fwdRank(theta):
 
     # Define variables, constants and permutations
@@ -73,10 +73,10 @@ def fwdRank(theta):
     # v is the solution to isotonic regression over s-w
     v = ir.fit_transform(x,  s-w)
 
-    # This is the result of the ranking operator
+    # This is the final result of the ranking operator
     answer = z - v[sigma_inv]
 
-    # blocks will hold sequential integers constant over
+    # blocks will hold sequential integers, constant over
     # each block of the isotonic regression
     c = 0
     blocks = [0]*len(v)
@@ -115,12 +115,8 @@ def fwdRank(theta):
     I = np.identity( jacobi_v.shape[0] )
     jacobi_P = ( (I-jacobi_v)[sigma_inv] )[:,sigma_inv]  
     
-    # jacobian operator for P wrt the original input theta (due to chain rule)
+    # jacobian operator for P wrt the original input theta ( using chain rule: dz/dtheta = -1/eps*I )
     jacobi_P_theta = jacobi_P * (-1.0/eps)
-
-    # Notes:
-    # about deriv wrt w (rho): dz/d(s:w) = dz/ds : dz/dw = dz/ds : 0 do we want that?
-    # check Lemma 2 with operator interpretation of the jacobian (make sure it's not transposed)
 
     return  answer ,  jacobi_P_theta 
 
@@ -129,6 +125,8 @@ def fwdRank(theta):
 
     
 if __name__ == "__main__":
+
+    #testing 
 
     torch.set_printoptions(precision=10)
     sr = softRank()
