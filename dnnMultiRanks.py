@@ -7,11 +7,10 @@ import matplotlib.pyplot as pp
 from pylab import *   
 import torch
 import torch.nn as nn
-import torchvision
-import torchvision.transforms as transforms
 import math
 from functools import reduce
 from softRank import softRank
+from fast_soft_sort.pytorch_ops import soft_rank, soft_sort
 #from MyReLU import MyReLU
 
 # !! Last left off - not training, very high starting test loss, training loss starts out increasing
@@ -23,18 +22,11 @@ class multiRankNet(nn.Module):
         super(multiRankNet, self).__init__()
         
         hidden_size = input_size
-        self.fc1  = nn.Linear(input_size, hidden_size) 
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size, 1)
-        self.fc2  = nn.Linear(hidden_size, hidden_size)
-        self.srank  = softRank()
 
         # for testing: a collection of linears to use on different segments of the input
-        self.partialLin = {i: nn.Linear(n_cols, n_cols) for i in range(0,howManyRanks) }
+        self.partialLin = {i: nn.Sequential( nn.Linear(n_cols, n_cols), nn.BatchNorm1d(n_cols) ) for i in range(0,howManyRanks) }
         
-        #self.myrelu = MyReLU()
-        self.splitLin = {i: nn.Linear(input_size, n_cols) for i in range(0,howManyRanks) }
-        self.splitRank = {i: softRank() for i in range(0,howManyRanks) }
+        #self.splitRank = {i: soft_rank for i in range(0,howManyRanks) }
 
         
     def forward(self, x):
@@ -50,11 +42,8 @@ class multiRankNet(nn.Module):
 
         r = dict()
         for i in range(0,howManyRanks):
-            r[i] = self.splitRank[i].apply( h[i] )
-
-        #print("r.items() = ",  r.items() )
+            r[i] = soft_rank( h[i], regularization_strength = 0.005 )
        
-
         out = torch.cat( tuple(r.values()), 1 )
         return out
 
@@ -166,7 +155,13 @@ model = multiRankNet(input_size, n_cols, num_classes).to(device)   #JK the model
 #criterion = nn.CrossEntropyLoss()     #JK-when ready:
 criterion = nn.MSELoss()
 test_criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  
+#optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  
+optimizer = torch.optim.Adam( [ {'params': model.parameters(), 'lr': learning_rate} ] +
+                              [ {'params':  Z.parameters(), 'lr': learning_rate} for Z in model.partialLin.values()]
+                              )
+    
+
+
 
 # Train the model
 loss_list = [] #JK
